@@ -22,6 +22,7 @@ export class Config {
   static readonly CORS_ORIGINS = [
     'http://localhost:5173',
     'http://localhost:3000',
-    'https://talk2post.vercel.app',
+    'https://talk2post.com',
+    'https://www.talk2post.com',
   ];
 }

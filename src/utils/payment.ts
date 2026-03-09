@@ -13,7 +13,6 @@ export class PaymentService {
     const secret = Config.LEMONSQUEEZY_WEBHOOK_SECRET;
     if (!secret) return false;
 
-   
     return true;
   }
 }

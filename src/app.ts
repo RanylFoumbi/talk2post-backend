@@ -36,7 +36,7 @@ export class App {
           'X-CSRFToken',
           'X-Requested-With',
         ],
-      })
+      }),
     );
 
     this.app.use(express.json());
