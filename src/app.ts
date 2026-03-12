@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { Config, SentryConfig, Sentry } from './config';
 import { AuthMiddleware, ErrorHandler, RateLimiter } from './utils';
 import routes from './routes';
+import "./sentry/instrument.js";
 
 export class App {
   public readonly app: express.Application;
