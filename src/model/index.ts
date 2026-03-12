@@ -1,13 +1,13 @@
-export type Role = 'admin' | 'user';
+import { Language, Plan, PostType, RecordingStatus, UserRole, WritingStyle } from "./enums.model";
 
 export interface Profile {
   id: string;
   full_name: string | null;
-  role: Role;
-  writing_style: string | null;
-  post_type_preference: string;
+  role: UserRole;
+  writing_style: WritingStyle | null;
+  post_type_preference: PostType;
   credits_remaining: number;
-  plan: string;
+  plan: Plan;
   created_at: string;
 }
 
@@ -17,8 +17,8 @@ export interface Recording {
   audio_url: string | null;
   duration_seconds: number | null;
   transcript: string | null;
-  language: string;
-  status: string;
+  language: Language;
+  status: RecordingStatus;
   audio_expires_at: string | null;
   created_at: string;
 }
@@ -28,7 +28,7 @@ export interface Post {
   user_id: string;
   recording_id: string | null;
   content: string;
-  post_type: string;
+  post_type: PostType;
   is_favorite: boolean;
   copied_at: string | null;
   created_at: string;
