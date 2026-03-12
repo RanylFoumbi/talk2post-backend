@@ -7,6 +7,7 @@
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
+  role text default 'user' check (role in ('admin', 'user')),
   writing_style text,
   post_type_preference text default 'inspiring',
   credits_remaining int default 5,
@@ -28,15 +29,17 @@ create policy "Users can update their own profile"
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, full_name)
+  insert into public.profiles (id, full_name, role)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1))
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    'user'
   );
   return new;
 end;
 $$ language plpgsql security definer;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();

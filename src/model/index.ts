@@ -1,6 +1,9 @@
+export type Role = 'admin' | 'user';
+
 export interface Profile {
   id: string;
   full_name: string | null;
+  role: Role;
   writing_style: string | null;
   post_type_preference: string;
   credits_remaining: number;
