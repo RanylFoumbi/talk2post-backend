@@ -3,9 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { Config, SentryConfig, Sentry } from './config';
-import { AuthMiddleware, ErrorHandler, RateLimiter } from './utils';
+import { AuthMiddleware } from './middleware/auth.middleware';
+import { ErrorHandler } from './middleware/error.middleware';
+import { RateLimiter } from './middleware/rate-limit.middleware';
 import routes from './routes';
-import "./sentry/instrument.js";
+import './config/sentry.instrument.js';
 
 export class App {
   public readonly app: express.Application;
