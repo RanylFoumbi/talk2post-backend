@@ -2,9 +2,9 @@ import OpenAI from 'openai';
 import { MimeType } from 'types/enums';
 import { OpenAIConfig } from '../config/openai';
 import {
-    OpenAiModel,
-    WhisperTranscriptionParams,
-    WhisperTranscriptionResponse,
+  OpenAiModel,
+  WhisperTranscriptionParams,
+  WhisperTranscriptionResponse,
 } from '../types/ai.types';
 
 export class WhisperService {

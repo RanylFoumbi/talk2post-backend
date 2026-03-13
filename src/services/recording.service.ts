@@ -73,7 +73,6 @@ export class RecordingService {
     if (error) throw error;
   }
 
- 
   static async completeRecording(params: UpdateRecordingTranscriptParams) {
     const { recordingId, transcript, language, duration } = params;
 

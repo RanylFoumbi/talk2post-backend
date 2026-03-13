@@ -7,6 +7,11 @@ import { createTranscriptionSchema } from '../schemas/recording.schema';
 const router = Router();
 const upload = UploadConfig.create();
 
-router.post('/recordings/transcribe', upload.single('audio'), validate(createTranscriptionSchema), RecordingController.create);
+router.post(
+  '/recordings/transcribe',
+  upload.single('audio'),
+  validate(createTranscriptionSchema),
+  RecordingController.create,
+);
 
 export default router;

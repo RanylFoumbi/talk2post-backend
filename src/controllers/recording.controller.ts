@@ -28,9 +28,7 @@ export class RecordingController {
       const recording = await RecordingService.createRecording({
         userId: req.userId!,
         audioUrl,
-        duration: req.body.duration
-          ? parseInt(req.body.duration)
-          : undefined,
+        duration: req.body.duration ? parseInt(req.body.duration) : undefined,
         audioExpiresAt: expiresAt,
       });
 
