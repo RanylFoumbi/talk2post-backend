@@ -51,7 +51,7 @@ create table public.recordings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   audio_url text,
-  duration_seconds int,
+  duration int,
   transcript text,
   language text default 'en',
   status text default 'processing',
