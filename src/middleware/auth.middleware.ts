@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import axios from 'axios';
+import { NextFunction, Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 import { Config } from '../config';
 
 declare global {
@@ -47,6 +47,18 @@ export class AuthMiddleware {
       }
 
       const authHeader = req.headers.authorization || '';
+
+      // ── DEV MODE: skip auth if no token provided ─────────────────
+      // This lets you test on Postman without a real JWT.
+      // In production, this block is NEVER reached.
+      if (!authHeader.startsWith('Bearer ') && Config.NODE_ENV === 'development') {
+        req.userId = '1558edb3-4dbf-46b0-b1da-c4add2d617bc';
+        req.userEmail = 'ranylfoumbi@gmail.com';
+        req.userRole = 'user';
+        console.warn('[Auth] ⚠️  DEV MODE: Skipping auth, using fake test user');
+        next();
+        return;
+      }
 
       if (!authHeader.startsWith('Bearer ')) {
         res.status(401).json({ error: 'Missing or invalid Authorization header' });
