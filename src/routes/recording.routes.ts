@@ -11,7 +11,7 @@ router.post(
   '/recordings/transcribe',
   upload.single('audio'),
   validate(createTranscriptionSchema),
-  RecordingController.create,
+  RecordingController.create
 );
 
 export default router;

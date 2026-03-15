@@ -2,9 +2,11 @@ import { NextFunction, Request, Response } from 'express';
 import { Sentry } from '../config';
 import { CustomError } from '../middleware/error.middleware';
 import { RecordingService } from '../services/recording.service';
-import { WhisperService } from '../services/whisper.service';
+import { WhisperService } from 'services/whisper.service';
 
 export class RecordingController {
+  private static whisperService = new WhisperService();
+
   static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) {
@@ -24,20 +26,17 @@ export class RecordingController {
       });
 
       // Create recording in database
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
       const recording = await RecordingService.createRecording({
         userId: req.userId!,
         audioUrl,
         duration: req.body.duration ? parseInt(req.body.duration) : undefined,
-        audioExpiresAt: expiresAt,
       });
 
       // Transcribe audio
       const audioFile = new File([req.file.buffer], req.file.originalname, {
         type: req.file.mimetype,
       });
-      const whisperService = new WhisperService();
-      const transcription = await whisperService.transcribeWithLanguageDetection(
+      const transcription = await this.whisperService.transcribeWithLanguageDetection(
         audioFile,
         requestedLanguage,
       );

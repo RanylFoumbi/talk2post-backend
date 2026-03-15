@@ -1,13 +1,14 @@
-import express from 'express';
+import { startCronJob } from '@utils/cronjob';
 import cors from 'cors';
+import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { Config, SentryConfig, Sentry } from './config';
+import { Config, Sentry, SentryConfig } from './config';
+import './config/sentry.instrument.js';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { ErrorHandler } from './middleware/error.middleware';
 import { RateLimiter } from './middleware/rate-limit.middleware';
 import routes from './routes';
-import './config/sentry.instrument.js';
 
 export class App {
   public readonly app: express.Application;
@@ -19,6 +20,7 @@ export class App {
     this.initMiddleware();
     this.initRoutes();
     this.initErrorHandling();
+    startCronJob();
   }
 
   private initMiddleware(): void {

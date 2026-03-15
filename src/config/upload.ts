@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { AllMimeTypes } from 'types/enums';
+import { AllMimeTypes, MimeType } from 'types/enums';
 import { Sentry } from './sentry';
 
 export class UploadConfig {
@@ -10,7 +10,7 @@ export class UploadConfig {
       storage: multer.memoryStorage(),
       limits: { fileSize: this.MAX_FILE_SIZE },
       fileFilter: (_req, file, cb) => {
-        if (AllMimeTypes.includes(file.mimetype)) {
+        if (AllMimeTypes.includes(file.mimetype as MimeType)) {
           cb(null, true);
         } else {
           Sentry.captureException(

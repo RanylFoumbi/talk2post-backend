@@ -55,7 +55,6 @@ create table public.recordings (
   transcript text,
   language text default 'en',
   status text default 'processing',
-  audio_expires_at timestamptz,
   created_at timestamptz default now()
 );
 
@@ -124,8 +123,6 @@ create policy "Users can read their own subscription"
 -- ==================================================
 create index idx_recordings_user_id on public.recordings(user_id);
 create index idx_recordings_status on public.recordings(status);
-create index idx_recordings_audio_expires on public.recordings(audio_expires_at)
-  where audio_expires_at is not null;
 
 create index idx_posts_user_id on public.posts(user_id);
 create index idx_posts_recording_id on public.posts(recording_id);
