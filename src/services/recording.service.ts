@@ -81,24 +81,24 @@ export class RecordingService {
   static async purgeExpiredAudio(): Promise<void> {
     const supabase = SupabaseConfig.getAdmin();
     const userId = '1558edb3-4dbf-46b0-b1da-c4add2d617bc';
-    
+
     const expiredPaths: string[] = [];
 
-   
-      const { data: files, error: filesError } = await supabase.storage.from('recordings').list(userId);
-      if (filesError) throw filesError;
-      if (!files) return;
-      console.log({files});
+    const { data: files, error: filesError } = await supabase.storage
+      .from('recordings')
+      .list(userId);
+    if (filesError) throw filesError;
+    if (!files) return;
+    console.log({ files });
 
-      for (const file of files) {
-        console.log({ file });
-        if (this.isExpiredByFilename(file.name)) {
-          expiredPaths.push(`${userId}/${file.name}`);
-        }
+    for (const file of files) {
+      console.log({ file });
+      if (this.isExpiredByFilename(file.name)) {
+        expiredPaths.push(`${userId}/${file.name}`);
       }
+    }
 
-      console.log({expiredPaths});
-    
+    console.log({ expiredPaths });
 
     if (expiredPaths.length === 0) return;
 
@@ -121,7 +121,10 @@ export class RecordingService {
         .map((r: { id: string }) => r.id);
 
       if (ids.length > 0) {
-        const { error: updateError } = await supabase.from('recordings').update({ audio_url: null }).in('id', ids);
+        const { error: updateError } = await supabase
+          .from('recordings')
+          .update({ audio_url: null })
+          .in('id', ids);
         if (updateError) throw updateError;
       }
     }
