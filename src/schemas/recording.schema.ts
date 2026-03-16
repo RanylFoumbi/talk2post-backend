@@ -13,4 +13,3 @@ export const updateTranscriptionSchema = z.object({
   transcript: z.string().optional(),
   language: z.string().optional(),
 });
-

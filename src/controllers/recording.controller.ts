@@ -62,17 +62,16 @@ export class RecordingController {
 
   static async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const {recordingId} = req.params;
+      const { recordingId } = req.params;
       const { transcript, language } = req.body;
 
       const updated = await RecordingService.updateRecording({
         recordingId: String(recordingId),
         transcript,
-        language
-      })
+        language,
+      });
 
       res.status(200).json(updated);
-    
     } catch (err) {
       Sentry.captureException(err);
       next(err);

@@ -7,32 +7,19 @@ import { createTranscriptionSchema, updateTranscriptionSchema } from '../schemas
 const router = Router();
 const upload = UploadConfig.create();
 
-router.get(
-  '/recordings/:recordingId',
-  RecordingController.getOne,
-);
+router.get('/:recordingId', RecordingController.getOne);
 
-router.get(
-  '/recordings',
-  RecordingController.list,
-);
+router.get('/', RecordingController.list);
 
 router.post(
-  '/recordings/transcribe',
+  '/transcribe',
   upload.single('audio'),
   validate(createTranscriptionSchema),
   RecordingController.create,
 );
 
-router.patch(
-  '/recordings/:recordingId',
-  validate(updateTranscriptionSchema),
-  RecordingController.update,
-);
+router.patch('/:recordingId', validate(updateTranscriptionSchema), RecordingController.update);
 
-router.delete(
-  '/recordings/:recordingId',
-  RecordingController.delete,
-);
+router.delete('/:recordingId', RecordingController.delete);
 
 export default router;
