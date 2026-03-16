@@ -2,11 +2,11 @@ import schedule from 'node-schedule';
 import { RecordingService } from '../services/recording.service';
 import { Sentry } from '@config/sentry';
 
-const PURGE_INTERVAL = 500000;
+export const AUDIO_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
 const PURGE_JOB_NAME = 'purge-expired-audio';
 
 export function startCronJob(): void {
-  schedule.scheduleJob(PURGE_JOB_NAME, { second: PURGE_INTERVAL }, async () => {
+  schedule.scheduleJob(PURGE_JOB_NAME, { second: AUDIO_EXPIRY_MS }, async () => {
     try {
       await RecordingService.purgeExpiredAudio();
     } catch (err) {

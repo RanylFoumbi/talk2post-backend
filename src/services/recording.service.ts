@@ -1,3 +1,4 @@
+import { AUDIO_EXPIRY_MS } from '@utils/cronjob';
 import { SupabaseConfig } from '../config';
 import { RecordingStatus } from '../types/enums';
 
@@ -71,11 +72,9 @@ export class RecordingService {
     if (error) throw error;
   }
 
-  private static readonly AUDIO_EXPIRY_MS = 15 * 60 * 1000;
-
   private static isExpiredByFilename(fileName: string): boolean {
     const timestamp = parseInt(fileName.split('-')[0], 10);
-    return !isNaN(timestamp) && Date.now() - timestamp > this.AUDIO_EXPIRY_MS;
+    return !isNaN(timestamp) && Date.now() - timestamp > AUDIO_EXPIRY_MS;
   }
 
   static async purgeExpiredAudio(): Promise<void> {
