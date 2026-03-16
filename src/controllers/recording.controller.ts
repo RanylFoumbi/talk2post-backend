@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
+import { WhisperService } from 'services/whisper.service';
 import { Sentry } from '../config';
 import { CustomError } from '../middleware/error.middleware';
 import { RecordingService } from '../services/recording.service';
-import { WhisperService } from 'services/whisper.service';
 
 export class RecordingController {
   private static whisperService = new WhisperService();
@@ -42,7 +42,7 @@ export class RecordingController {
       );
 
       // Complete recording with transcript
-      const completed = await RecordingService.completeRecording({
+      const completed = await RecordingService.updateRecording({
         recordingId: recording.id,
         transcript: transcription.text,
         language: transcription.detectedLanguage,
@@ -55,6 +55,62 @@ export class RecordingController {
         next(new CustomError('Could not detect language', 422, 'LANGUAGE_DETECTION_FAILED'));
         return;
       }
+      Sentry.captureException(err);
+      next(err);
+    }
+  }
+
+  static async update(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const {recordingId} = req.params;
+      const { transcript, language } = req.body;
+
+      const updated = await RecordingService.updateRecording({
+        recordingId: String(recordingId),
+        transcript,
+        language
+      })
+
+      res.status(200).json(updated);
+    
+    } catch (err) {
+      Sentry.captureException(err);
+      next(err);
+    }
+  }
+
+  static async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { recordingId } = req.params;
+
+      const deleted = await RecordingService.deleteRecording(String(recordingId));
+
+      res.status(204).json(deleted);
+    } catch (err) {
+      Sentry.captureException(err);
+      next(err);
+    }
+  }
+
+  static async getOne(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { recordingId } = req.params;
+
+      const recording = await RecordingService.getRecording(String(recordingId));
+
+      res.status(200).json(recording);
+    } catch (err) {
+      Sentry.captureException(err);
+      next(err);
+    }
+  }
+
+  static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const recordings = await RecordingService.listUserRecordings();
+
+      res.status(200).json(recordings);
+    } catch (err) {
       Sentry.captureException(err);
       next(err);
     }

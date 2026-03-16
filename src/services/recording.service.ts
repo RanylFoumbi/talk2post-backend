@@ -88,16 +88,12 @@ export class RecordingService {
       .list(userId);
     if (filesError) throw filesError;
     if (!files) return;
-    console.log({ files });
 
     for (const file of files) {
-      console.log({ file });
       if (this.isExpiredByFilename(file.name)) {
         expiredPaths.push(`${userId}/${file.name}`);
       }
     }
-
-    console.log({ expiredPaths });
 
     if (expiredPaths.length === 0) return;
 
@@ -131,7 +127,7 @@ export class RecordingService {
     console.log(`[purgeExpiredAudio] Purged ${expiredPaths.length} file(s)`);
   }
 
-  static async completeRecording(params: UpdateRecordingTranscriptParams) {
+  static async updateRecording(params: UpdateRecordingTranscriptParams) {
     const { recordingId, transcript, language, duration } = params;
 
     const updateParams: Record<string, unknown> = {
@@ -152,5 +148,41 @@ export class RecordingService {
     if (updateError) throw updateError;
 
     return completed;
+  }
+
+  static async deleteRecording(recordingId: string) {
+    const { error } = await SupabaseConfig.getAdmin()
+      .from('recordings')
+      .delete()
+      .eq('id', recordingId);
+
+    if (error) throw error;
+  }
+
+  static async getRecording(recordingId: string) {
+    const userId = '1558edb3-4dbf-46b0-b1da-c4add2d617bc';
+    const { data: recording, error: getError } = await SupabaseConfig.getAdmin()
+      .from('recordings')
+      .select()
+      .eq('id', recordingId)
+      .eq('user_id', userId)
+      .single();
+
+    if (getError) throw getError;
+
+    return recording;
+  }
+
+  static async listUserRecordings() {
+    const userId = '1558edb3-4dbf-46b0-b1da-c4add2d617bc';
+
+    const { data: recordings, error: listError } = await SupabaseConfig.getAdmin()
+      .from('recordings')
+      .select()
+      .eq('user_id', userId);
+
+    if (listError) throw listError;
+
+    return recordings;
   }
 }

@@ -8,3 +8,9 @@ export const createTranscriptionSchema = z.object({
     { message: `Must be an audio file of type ${AllMimeTypes.join(', ')}` },
   ),
 });
+
+export const updateTranscriptionSchema = z.object({
+  transcript: z.string().optional(),
+  language: z.string().optional(),
+});
+
