@@ -4,8 +4,9 @@ import { PostService } from '../services/post.service';
 
 export class PostController {
   static async generate(req: Request, res: Response, next: NextFunction): Promise<void> {
-    res.setHeader('Content-Type', 'application/x-ndjson');
+    res.setHeader('Content-Type', 'application/json');
     res.setHeader('Transfer-Encoding', 'chunked');
+    res.flushHeaders();
 
     try {
       const result = PostService.generateStream(req.body);
