@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { Sentry } from '../config';
+import { resolveStreamErrorCode } from '../middleware/error.middleware';
 import { PostService } from '../services/post.service';
 
 export class PostController {
@@ -18,7 +19,12 @@ export class PostController {
       res.end();
     } catch (err) {
       Sentry.captureException(err);
-      next(err);
+      if (!res.headersSent) {
+        next(err);
+      } else {
+        res.write(JSON.stringify({ error: err instanceof Error ? err.message : 'Generation failed', code: resolveStreamErrorCode(err) }) + '\n');
+        res.end();
+      }
     }
   }
 }

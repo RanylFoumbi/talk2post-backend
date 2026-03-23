@@ -1,6 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
+import { APICallError } from 'ai';
 import { Sentry } from '../config';
 import { MulterError } from 'multer';
+
+export function resolveStreamErrorCode(err: unknown): string {
+  if (APICallError.isInstance(err)) {
+    switch (err.statusCode) {
+      case 401: return 'INVALID_API_KEY';
+      case 429: return 'INSUFFICIENT_CREDITS';
+      case 503: return 'SERVICE_UNAVAILABLE';
+      default:  return 'GENERATION_FAILED';
+    }
+  }
+  return 'GENERATION_FAILED';
+}
 
 export interface AppError extends Error {
   statusCode?: number;
