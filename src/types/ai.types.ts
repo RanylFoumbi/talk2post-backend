@@ -1,7 +1,6 @@
 export enum OpenAiModel {
-  Gpt52 = 'gpt-52',
-  Gpt5Mini = 'gpt-5-mini',
   Gpt5Nano = 'gpt-5-nano',
+  Gpt5Mini = 'gpt-5-mini',
   Whisper1 = 'whisper-1',
 }
 
@@ -37,3 +36,5 @@ export interface WhisperTranscriptionParams {
   temperature?: number;
   language?: string;
 }
+
+export const DEFAULT_LLM_MODEL = OpenAiModel.Gpt5Nano;

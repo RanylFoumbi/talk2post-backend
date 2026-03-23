@@ -4,9 +4,8 @@ const MODEL_COSTS: Record<
   OpenAiModel,
   { billingType: BillingType; input: number; output: number }
 > = {
-  [OpenAiModel.Gpt52]: { billingType: BillingType.TOKEN, input: 0.00175, output: 0.014 },
-  [OpenAiModel.Gpt5Mini]: { billingType: BillingType.TOKEN, input: 0.00025, output: 0.002 },
   [OpenAiModel.Gpt5Nano]: { billingType: BillingType.TOKEN, input: 0.00005, output: 0.0004 },
+  [OpenAiModel.Gpt5Mini]: { billingType: BillingType.TOKEN, input: 0.00025, output: 0.002 },
   [OpenAiModel.Whisper1]: { billingType: BillingType.MINUTE, input: 0.006, output: 0 },
 };
 

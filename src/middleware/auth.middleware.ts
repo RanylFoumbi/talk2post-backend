@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { Config } from '../config';
@@ -22,12 +21,13 @@ export class AuthMiddleware {
     if (this.jwtSecret) return this.jwtSecret;
 
     try {
-      const response = await axios.get(`${Config.SUPABASE_URL}/auth/v1/settings`, {
+      const response = await fetch(`${Config.SUPABASE_URL}/auth/v1/settings`, {
         headers: { apikey: Config.SUPABASE_SERVICE_KEY },
       });
 
-      if (response.status === 200) {
-        this.jwtSecret = response.data.jwt_secret;
+      if (response.ok) {
+        const data = await response.json() as { jwt_secret: string };
+        this.jwtSecret = data.jwt_secret;
         return this.jwtSecret;
       }
 
