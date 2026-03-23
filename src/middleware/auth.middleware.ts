@@ -39,6 +39,10 @@ export class AuthMiddleware {
     }
   }
 
+  static async warmup(): Promise<void> {
+    await AuthMiddleware.fetchJwtSecret();
+  }
+
   static handle() {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       if (PUBLIC_PATHS.some((path) => req.path.startsWith(path))) {

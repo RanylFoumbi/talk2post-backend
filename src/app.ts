@@ -21,6 +21,9 @@ export class App {
     this.initRoutes();
     this.initErrorHandling();
     startCronJob();
+    AuthMiddleware.warmup().catch((err) =>
+      console.error('[Auth] Failed to warm up JWT secret:', err),
+    );
   }
 
   private initMiddleware(): void {
@@ -46,7 +49,7 @@ export class App {
 
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
-    this.app.use(morgan(Config.NODE_ENV === 'production' ? 'combined' : 'dev'));
+    this.app.use(morgan(':method :url :status :response-time ms'));
     this.app.use(RateLimiter.create());
     this.app.use(AuthMiddleware.handle());
   }

@@ -1,7 +1,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import { streamText, ToolSet, type StreamTextResult } from 'ai';
 import { LINKEDIN_POST_SYSTEM_PROMPT } from 'ai/assistant.ai';
 import { userPrompt } from 'ai/script.ai';
-import { streamText, ToolSet, type StreamTextResult } from 'ai';
 import { Config } from 'config/env';
 import type { GeneratePostInput } from 'schemas/post.schema';
 import { DEFAULT_LLM_MODEL } from 'types/ai.types';
