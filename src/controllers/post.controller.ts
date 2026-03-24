@@ -10,14 +10,14 @@ export class PostController {
     res.flushHeaders();
 
     try {
-      const start = Date.now();
       const result = PostService.generateStream(req.body);
 
-      for await (const delta of result.textStream) {
-        res.write(JSON.stringify({ content: delta }) + '\n');
-      }
+      await Sentry.startSpan({ name: 'post.generate', op: 'ai.run' }, async () => {
+        for await (const delta of result.textStream) {
+          res.write(JSON.stringify({ content: delta }) + '\n');
+        }
+      });
 
-      console.log(`[PostController] generation took ${Date.now() - start}ms`);
       res.end();
     } catch (err) {
       Sentry.captureException(err);
