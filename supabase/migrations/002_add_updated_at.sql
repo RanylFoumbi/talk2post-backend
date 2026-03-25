@@ -15,9 +15,9 @@ $$ language plpgsql;
 -- profiles
 -- ==================================================
 alter table public.profiles
-  add column updated_at timestamptz default now();
+  add column if not exists updated_at timestamptz default now();
 
-create trigger set_profiles_updated_at
+create or replace trigger set_profiles_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
 
@@ -25,9 +25,9 @@ create trigger set_profiles_updated_at
 -- recordings
 -- ==================================================
 alter table public.recordings
-  add column updated_at timestamptz default now();
+  add column if not exists updated_at timestamptz default now();
 
-create trigger set_recordings_updated_at
+create or replace trigger set_recordings_updated_at
   before update on public.recordings
   for each row execute function public.set_updated_at();
 
@@ -35,9 +35,9 @@ create trigger set_recordings_updated_at
 -- posts
 -- ==================================================
 alter table public.posts
-  add column updated_at timestamptz default now();
+  add column if not exists updated_at timestamptz default now();
 
-create trigger set_posts_updated_at
+create or replace trigger set_posts_updated_at
   before update on public.posts
   for each row execute function public.set_updated_at();
 
@@ -45,8 +45,8 @@ create trigger set_posts_updated_at
 -- subscriptions
 -- ==================================================
 alter table public.subscriptions
-  add column updated_at timestamptz default now();
+  add column if not exists updated_at timestamptz default now();
 
-create trigger set_subscriptions_updated_at
+create or replace trigger set_subscriptions_updated_at
   before update on public.subscriptions
   for each row execute function public.set_updated_at();
