@@ -79,19 +79,28 @@ export class RecordingService {
 
   static async purgeExpiredAudio(): Promise<void> {
     const supabase = SupabaseConfig.getAdmin();
-    const userId = '1558edb3-4dbf-46b0-b1da-c4add2d617bc';
+
+    // List all user folders in the recordings bucket
+    const { data: folders, error: foldersError } = await supabase.storage
+      .from('recordings')
+      .list('', { limit: 1000 });
+    if (foldersError) throw foldersError;
+    if (!folders) return;
 
     const expiredPaths: string[] = [];
 
-    const { data: files, error: filesError } = await supabase.storage
-      .from('recordings')
-      .list(userId);
-    if (filesError) throw filesError;
-    if (!files) return;
+    for (const folder of folders) {
+      const userId = folder.name;
+      const { data: files, error: filesError } = await supabase.storage
+        .from('recordings')
+        .list(userId);
+      if (filesError) throw filesError;
+      if (!files) continue;
 
-    for (const file of files) {
-      if (this.isExpiredByFilename(file.name)) {
-        expiredPaths.push(`${userId}/${file.name}`);
+      for (const file of files) {
+        if (this.isExpiredByFilename(file.name)) {
+          expiredPaths.push(`${userId}/${file.name}`);
+        }
       }
     }
 
@@ -130,7 +139,12 @@ export class RecordingService {
   static async updateRecording(params: UpdateRecordingTranscriptParams) {
     const { recordingId, transcript, language, duration } = params;
 
-    const updateParams: Record<string, unknown> = {
+    const updateParams: {
+      status: RecordingStatus;
+      transcript?: string;
+      language?: string;
+      duration?: number;
+    } = {
       status: RecordingStatus.COMPLETED,
     };
 
@@ -159,8 +173,7 @@ export class RecordingService {
     if (error) throw error;
   }
 
-  static async getRecording(recordingId: string) {
-    const userId = '1558edb3-4dbf-46b0-b1da-c4add2d617bc';
+  static async getRecording(recordingId: string, userId: string) {
     const { data: recording, error: getError } = await SupabaseConfig.getAdmin()
       .from('recordings')
       .select()
@@ -173,9 +186,7 @@ export class RecordingService {
     return recording;
   }
 
-  static async listUserRecordings() {
-    const userId = '1558edb3-4dbf-46b0-b1da-c4add2d617bc';
-
+  static async listUserRecordings(userId: string) {
     const { data: recordings, error: listError } = await SupabaseConfig.getAdmin()
       .from('recordings')
       .select()

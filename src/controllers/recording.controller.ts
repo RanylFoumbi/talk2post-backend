@@ -95,7 +95,7 @@ export class RecordingController {
     try {
       const { recordingId } = req.params;
 
-      const recording = await RecordingService.getRecording(String(recordingId));
+      const recording = await RecordingService.getRecording(String(recordingId), req.userId!);
 
       res.status(200).json(recording);
     } catch (err) {
@@ -106,7 +106,7 @@ export class RecordingController {
 
   static async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const recordings = await RecordingService.listUserRecordings();
+      const recordings = await RecordingService.listUserRecordings(req.userId!);
 
       res.status(200).json(recordings);
     } catch (err) {
