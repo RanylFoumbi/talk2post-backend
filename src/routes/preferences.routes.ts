@@ -6,6 +6,6 @@ import { upsertPreferencesSchema } from '../schemas/preferences.schema';
 const router = Router();
 
 router.get('/', PreferencesController.get);
-router.put('/', validate(upsertPreferencesSchema), PreferencesController.upsert);
+router.patch('/', validate(upsertPreferencesSchema), PreferencesController.upsert);
 
 export default router;

@@ -216,7 +216,7 @@ Get the authenticated user's saved preferences.
 
 ---
 
-### `PUT /preferences`
+### `PATCH /preferences`
 
 Create or update preferences (upsert).
 

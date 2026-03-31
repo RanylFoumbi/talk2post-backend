@@ -34,7 +34,7 @@
         {
           "name": "Upsert Preferences",
           "request": {
-            "method": "PUT",
+            "method": "PATCH",
             "url": { "raw": "{{baseUrl}}/preferences", "host": ["{{baseUrl}}"], "path": ["preferences"] },
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
