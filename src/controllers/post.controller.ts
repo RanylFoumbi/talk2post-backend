@@ -78,6 +78,9 @@ export class PostController {
 
       if (req.body.recordingId) {
         const recording = await RecordingService.getRecording(req.body.recordingId, req.userId!);
+        if (!recording) {
+          throw new CustomError('Recording not found', 404, 'RECORDING_NOT_FOUND');
+        }
         if (!recording.transcript) {
           throw new CustomError('Recording has no transcript', 400, 'NO_TRANSCRIPT');
         }

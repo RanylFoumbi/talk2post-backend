@@ -179,7 +179,7 @@ export class RecordingService {
       .select()
       .eq('id', recordingId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (getError) throw getError;
 
