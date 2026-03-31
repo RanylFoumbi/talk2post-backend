@@ -31,21 +31,26 @@ export class RecordingController {
         duration: req.body.duration ? parseInt(req.body.duration) : undefined,
       });
 
-      // Transcribe audio
-      const transcription = await new WhisperService().transcribeWithLanguageDetection(
-        req.file.buffer,
-        requestedLanguage,
-      );
+      try {
+        // Transcribe audio
+        const transcription = await new WhisperService().transcribeWithLanguageDetection(
+          req.file.buffer,
+          requestedLanguage,
+        );
 
-      // Complete recording with transcript
-      const completed = await RecordingService.updateRecording({
-        recordingId: recording.id,
-        transcript: transcription.text,
-        language: transcription.detectedLanguage,
-        duration: Math.round(transcription.duration || 0),
-      });
+        // Complete recording with transcript
+        const completed = await RecordingService.updateRecording({
+          recordingId: recording.id,
+          transcript: transcription.text,
+          language: transcription.detectedLanguage,
+          duration: Math.round(transcription.duration || 0),
+        });
 
-      res.status(201).json(completed);
+        res.status(201).json(completed);
+      } catch (err) {
+        await RecordingService.markAsFailed(recording.id);
+        throw err;
+      }
     } catch (err) {
       if (err instanceof Error && err.message === 'Could not detect language') {
         next(new CustomError('Could not detect language', 422, 'LANGUAGE_DETECTION_FAILED'));
