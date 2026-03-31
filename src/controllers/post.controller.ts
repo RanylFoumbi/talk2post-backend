@@ -67,12 +67,8 @@ export class PostController {
   }
 
   static async generate(req: Request, res: Response, next: NextFunction): Promise<void> {
-    res.setHeader('Content-Type', 'application/x-ndjson');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    res.flushHeaders();
-
     try {
-      // Resolve transcript: from recording or from manual input
+      // Resolve transcript before streaming starts (so errors return proper status codes)
       let transcript: string;
       let recordingLanguage: string | undefined;
 
@@ -111,7 +107,11 @@ export class PostController {
         }
       }
 
-      // Stream generation
+      // All validation passed — start streaming
+      res.setHeader('Content-Type', 'application/x-ndjson');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.flushHeaders();
+
       const result = PostService.generateStream(params);
       let fullContent = '';
 
