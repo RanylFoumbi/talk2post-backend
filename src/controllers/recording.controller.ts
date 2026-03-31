@@ -33,11 +33,8 @@ export class RecordingController {
       });
 
       // Transcribe audio
-      const audioFile = new File([req.file.buffer], req.file.originalname, {
-        type: req.file.mimetype,
-      });
       const transcription = await this.whisperService.transcribeWithLanguageDetection(
-        audioFile,
+        req.file.buffer,
         requestedLanguage,
       );
 
