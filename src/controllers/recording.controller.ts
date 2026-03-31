@@ -5,7 +5,6 @@ import { CustomError } from '../middleware/error.middleware';
 import { RecordingService } from '../services/recording.service';
 
 export class RecordingController {
-  private static whisperService = new WhisperService();
 
   static async create(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -33,7 +32,7 @@ export class RecordingController {
       });
 
       // Transcribe audio
-      const transcription = await this.whisperService.transcribeWithLanguageDetection(
+      const transcription = await new WhisperService().transcribeWithLanguageDetection(
         req.file.buffer,
         requestedLanguage,
       );
