@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch --expose-gc src/server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "start": "node --expose-gc dist/server.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -40,6 +40,7 @@
     "@types/node": "^22.10.5",
     "@types/node-schedule": "^2.1.8",
     "prettier": "^3.8.1",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
