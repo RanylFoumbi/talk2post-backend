@@ -1,4 +1,3 @@
-import { startCronJob } from '@utils/cronjob';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -20,7 +19,6 @@ export class App {
     this.initMiddleware();
     this.initRoutes();
     this.initErrorHandling();
-    startCronJob();
     AuthMiddleware.warmup().catch((err) =>
       console.error('[Auth] Failed to warm up JWT secret:', err),
     );

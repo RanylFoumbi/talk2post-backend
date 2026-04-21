@@ -12,7 +12,7 @@ declare global {
   }
 }
 
-const PUBLIC_PATHS = ['/api/health', '/webhooks/lemonsqueezy'];
+const PUBLIC_PATHS = ['/api/health', '/api/cron/purge', '/webhooks/lemonsqueezy'];
 
 export class AuthMiddleware {
   private static jwtSecret: string | null = null;

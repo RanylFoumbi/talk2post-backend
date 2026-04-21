@@ -3,8 +3,9 @@ import { Config } from './config';
 
 const { app } = new App();
 
-app.listen(Config.PORT, () => {
-  console.log(`
+if (Config.NODE_ENV !== 'production') {
+  app.listen(Config.PORT, () => {
+    console.log(`
   ╔══════════════════════════════════════════════════════════╗
   ║  🚀 Talk2Post API Server                                 ║
   ║                                                          ║
@@ -13,4 +14,7 @@ app.listen(Config.PORT, () => {
   ║  Health:      http://localhost:${Config.PORT}/api/health ║
   ╚══════════════════════════════════════════════════════════╝
   `);
-});
+  });
+}
+
+export default app;
