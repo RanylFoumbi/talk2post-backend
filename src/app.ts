@@ -7,11 +7,14 @@ import './config/sentry.instrument.js';
 import { AuthMiddleware } from './middleware/auth.middleware';
 import { ErrorHandler } from './middleware/error.middleware';
 import { RateLimiter } from './middleware/rate-limit.middleware';
+import { swaggerRouter } from './config/swagger';
 import routes from './routes';
 
 SentryConfig.init();
 
 const app = express();
+
+app.use('/api/docs', swaggerRouter);
 
 app.use(helmet());
 app.use(
