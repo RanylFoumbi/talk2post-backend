@@ -1,4 +1,4 @@
-import { AllMimeTypes, MimeType } from 'types/enums';
+import { AllMimeTypes, MimeType } from '../types/enums';
 import { z } from 'zod';
 
 export const createTranscriptionSchema = z.object({

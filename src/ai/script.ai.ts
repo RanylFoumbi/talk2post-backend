@@ -1,4 +1,4 @@
-import { WritingStyle } from 'types/enums';
+import { WritingStyle } from '../types/enums';
 
 export const userPrompt = (
   transcript: string,

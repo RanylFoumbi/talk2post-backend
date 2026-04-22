@@ -1,6 +1,6 @@
 import schedule from 'node-schedule';
 import { RecordingService } from '../services/recording.service';
-import { Sentry } from '@config/sentry';
+import { Sentry } from '../config/sentry';
 
 export const AUDIO_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
 const PURGE_JOB_NAME = 'purge-expired-audio';

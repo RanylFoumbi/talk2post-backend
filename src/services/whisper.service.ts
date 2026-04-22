@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { MimeType } from 'types/enums';
+import { MimeType } from '../types/enums';
 import { OpenAIConfig } from '../config/openai';
 import {
   OpenAiModel,

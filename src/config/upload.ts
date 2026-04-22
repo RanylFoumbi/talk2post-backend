@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { AllMimeTypes, MimeType } from 'types/enums';
+import { AllMimeTypes, MimeType } from '../types/enums';
 import { Sentry } from './sentry';
 
 export class UploadConfig {

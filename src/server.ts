@@ -1,7 +1,5 @@
-import { App } from './app';
+import app from './app';
 import { Config } from './config';
-
-const { app } = new App();
 
 if (Config.NODE_ENV !== 'production') {
   app.listen(Config.PORT, () => {

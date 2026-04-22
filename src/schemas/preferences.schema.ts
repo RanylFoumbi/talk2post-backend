@@ -1,4 +1,4 @@
-import { Language, WritingStyle } from 'types/enums';
+import { Language, WritingStyle } from '../types/enums';
 import { z } from 'zod';
 
 export const upsertPreferencesSchema = z.object({

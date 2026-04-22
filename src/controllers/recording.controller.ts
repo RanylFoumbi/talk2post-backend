@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { WhisperService } from 'services/whisper.service';
+import { WhisperService } from '../services/whisper.service';
 import { Sentry } from '../config';
 import { CustomError } from '../middleware/error.middleware';
 import { RecordingService } from '../services/recording.service';

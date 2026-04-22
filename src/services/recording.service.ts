@@ -1,4 +1,4 @@
-import { AUDIO_EXPIRY_MS } from '@utils/cronjob';
+import { AUDIO_EXPIRY_MS } from '../utils/cronjob';
 import { SupabaseConfig } from '../config';
 import { RecordingStatus } from '../types/enums';
 

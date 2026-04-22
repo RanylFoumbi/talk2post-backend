@@ -1,11 +1,11 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { StreamTextResult, streamText, ToolSet } from 'ai';
-import { LINKEDIN_POST_SYSTEM_PROMPT } from 'ai/assistant.ai';
-import { userPrompt } from 'ai/script.ai';
-import { SupabaseConfig } from 'config';
-import { Config } from 'config/env';
-import { DEFAULT_LLM_MODEL } from 'types/ai.types';
-import { WritingStyle } from 'types/enums';
+import { LINKEDIN_POST_SYSTEM_PROMPT } from '../ai/assistant.ai';
+import { userPrompt } from '../ai/script.ai';
+import { SupabaseConfig } from '../config';
+import { Config } from '../config/env';
+import { DEFAULT_LLM_MODEL } from '../types/ai.types';
+import { WritingStyle } from '../types/enums';
 
 const openai = createOpenAI({ apiKey: Config.OPENAI_API_KEY });
 

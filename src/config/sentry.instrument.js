@@ -1,11 +1,7 @@
-import * as Sentry from "@sentry/node"
-import { nodeProfilingIntegration } from "@sentry/profiling-node"
-import dotenv from "dotenv"
-import { createRequire } from "module"
+const Sentry = require("@sentry/node")
+const { nodeProfilingIntegration } = require("@sentry/profiling-node")
+require("dotenv").config()
 
-dotenv.config()
-
-const require = createRequire(import.meta.url)
 const { version } = require("../../package.json")
 
 Sentry.init({

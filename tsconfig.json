@@ -13,16 +13,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "baseUrl": "./src",
-    "paths": {
-      "@config/*": ["config/*"],
-      "@controllers/*": ["controllers/*"],
-      "@mailing/*": ["mailing/*"],
-      "@model/*": ["model/*"],
-      "@routes/*": ["routes/*"],
-      "@template/*": ["template/*"],
-      "@utils/*": ["utils/*"]
-    }
+    "baseUrl": "./src"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

@@ -9,55 +9,41 @@ import { ErrorHandler } from './middleware/error.middleware';
 import { RateLimiter } from './middleware/rate-limit.middleware';
 import routes from './routes';
 
-export class App {
-  public readonly app: express.Application;
+SentryConfig.init();
 
-  constructor() {
-    SentryConfig.init();
+const app = express();
 
-    this.app = express();
-    this.initMiddleware();
-    this.initRoutes();
-    this.initErrorHandling();
-    AuthMiddleware.warmup().catch((err) =>
-      console.error('[Auth] Failed to warm up JWT secret:', err),
-    );
-  }
+app.use(helmet());
+app.use(
+  cors({
+    origin: [...Config.CORS_ORIGINS],
+    credentials: true,
+    allowedHeaders: [
+      'Accept',
+      'Accept-Encoding',
+      'Authorization',
+      'Content-Type',
+      'DNT',
+      'Origin',
+      'User-Agent',
+      'X-CSRFToken',
+      'X-Requested-With',
+    ],
+  }),
+);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan(':method :url :status :response-time ms'));
+app.use(RateLimiter.create());
+app.use(AuthMiddleware.handle());
 
-  private initMiddleware(): void {
-    this.app.use(helmet());
+app.use('/api', routes);
 
-    this.app.use(
-      cors({
-        origin: [...Config.CORS_ORIGINS],
-        credentials: true,
-        allowedHeaders: [
-          'Accept',
-          'Accept-Encoding',
-          'Authorization',
-          'Content-Type',
-          'DNT',
-          'Origin',
-          'User-Agent',
-          'X-CSRFToken',
-          'X-Requested-With',
-        ],
-      }),
-    );
+Sentry.setupExpressErrorHandler(app);
+app.use(ErrorHandler.handle);
 
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
-    this.app.use(morgan(':method :url :status :response-time ms'));
-    this.app.use(RateLimiter.create());
-    this.app.use(AuthMiddleware.handle());
-  }
+AuthMiddleware.warmup().catch((err) =>
+  console.error('[Auth] Failed to warm up JWT secret:', err),
+);
 
-  private initRoutes(): void {
-    this.app.use('/api', routes);
-  }
-
-  private initErrorHandling(): void {
-    Sentry.setupExpressErrorHandler(this.app);
-    this.app.use(ErrorHandler.handle);
-  }
-}
+export default app;
