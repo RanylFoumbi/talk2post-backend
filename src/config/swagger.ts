@@ -376,7 +376,16 @@ const swaggerDocument = {
   },
 };
 
+const CDN = 'https://unpkg.com/swagger-ui-dist@5.18.2';
+
 const router = Router();
-router.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+router.use(
+  '/',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    customCssUrl: `${CDN}/swagger-ui.css`,
+    customJs: [`${CDN}/swagger-ui-bundle.js`, `${CDN}/swagger-ui-standalone-preset.js`],
+  }),
+);
 
 export { router as swaggerRouter, swaggerDocument };
