@@ -9,6 +9,7 @@ export class Config {
   static readonly SUPABASE_URL = process.env.SUPABASE_URL || '';
   static readonly SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
   static readonly SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+  static readonly SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || '';
 
   static readonly OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 

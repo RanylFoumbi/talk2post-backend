@@ -15,32 +15,10 @@ declare global {
 const PUBLIC_PATHS = ['/api/health', '/api/cron/purge', '/webhooks/lemonsqueezy'];
 
 export class AuthMiddleware {
-  private static jwtSecret: string | null = null;
-
-  private static async fetchJwtSecret(): Promise<string | null> {
-    if (this.jwtSecret) return this.jwtSecret;
-
-    try {
-      const response = await fetch(`${Config.SUPABASE_URL}/auth/v1/settings`, {
-        headers: { apikey: Config.SUPABASE_SERVICE_KEY },
-      });
-
-      if (response.ok) {
-        const data = await response.json() as { jwt_secret: string };
-        this.jwtSecret = data.jwt_secret;
-        return this.jwtSecret;
-      }
-
-      console.error(`[Auth] Failed to fetch JWT secret: ${response.status}`);
-      return null;
-    } catch (error) {
-      console.error('[Auth] Error fetching JWT secret:', error);
-      return null;
-    }
-  }
-
   static async warmup(): Promise<void> {
-    await AuthMiddleware.fetchJwtSecret();
+    if (!Config.SUPABASE_JWT_SECRET) {
+      console.error('[Auth] SUPABASE_JWT_SECRET is not set');
+    }
   }
 
   static handle() {
@@ -70,22 +48,21 @@ export class AuthMiddleware {
       }
 
       const token = authHeader.replace('Bearer ', '');
-      const secret = await AuthMiddleware.fetchJwtSecret();
 
-      if (!secret) {
+      if (!Config.SUPABASE_JWT_SECRET) {
         res.status(500).json({ error: 'Authentication service unavailable' });
         return;
       }
 
       try {
-        const payload = jwt.verify(token, secret, {
+        const payload = jwt.verify(token, Config.SUPABASE_JWT_SECRET, {
           algorithms: ['HS256'],
           audience: 'authenticated',
         }) as jwt.JwtPayload;
 
         req.userId = payload.sub;
-        req.userEmail = payload.email as string;
-        req.userRole = payload.role as string;
+        req.userEmail = String(payload.email);
+        req.userRole = String(payload.role);
 
         next();
       } catch (error) {
