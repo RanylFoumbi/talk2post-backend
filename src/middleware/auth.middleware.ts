@@ -32,7 +32,9 @@ export class AuthMiddleware {
 
       const token = authHeader.split(' ')[1];
 
-      console.log(`[Auth] Validating token: ${token}`);
+     if (process.env.NODE_ENV === 'development') {
+       console.log(`[Auth] Validating token: ${token}`);
+     }
 
       try {
         const { data, error } = await SupabaseConfig.getAdmin().auth.getUser(token);
