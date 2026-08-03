@@ -1,380 +1,391 @@
+import {
+  OpenAPIRegistry,
+  OpenApiGeneratorV3,
+  extendZodWithOpenApi,
+} from '@asteasolutions/zod-to-openapi';
 import swaggerUi from 'swagger-ui-express';
 import { Router } from 'express';
+import { z } from 'zod';
+import { upsertPreferencesSchema } from '../schemas/preferences.schema';
+import { generatePostSchema, updatePostSchema } from '../schemas/post.schema';
+import { updateTranscriptionSchema } from '../schemas/recording.schema';
+import { Language, MimeType, RecordingStatus, WritingStyle } from '../types/enums';
 
-const swaggerDocument = {
+extendZodWithOpenApi(z);
+
+const registry = new OpenAPIRegistry();
+
+// ── Security ──
+const bearerAuth = registry.registerComponent('securitySchemes', 'BearerAuth', {
+  type: 'http',
+  scheme: 'bearer',
+  bearerFormat: 'JWT',
+  description: 'Supabase JWT access token',
+});
+
+// ── Reusable enum schemas ──
+const WritingStyleSchema = registry.register(
+  'WritingStyle',
+  z.nativeEnum(WritingStyle).openapi({ description: 'Writing style' }),
+);
+const LanguageSchema = registry.register(
+  'Language',
+  z.nativeEnum(Language).openapi({ description: 'Language code' }),
+);
+registry.register(
+  'MimeType',
+  z.nativeEnum(MimeType).openapi({ description: 'Audio MIME type' }),
+);
+
+// ── Preferences ──
+const PreferencesSchema = registry.register('Preferences', upsertPreferencesSchema.openapi({}));
+
+// ── Recording ──
+const RecordingSchema = registry.register(
+  'Recording',
+  z
+    .object({
+      id: z.string().uuid(),
+      user_id: z.string().uuid(),
+      audio_url: z.string(),
+      transcript: z.string(),
+      language: z.string(),
+      duration: z.number().int(),
+      status: z.nativeEnum(RecordingStatus),
+      created_at: z.string().datetime(),
+    })
+    .openapi({}),
+);
+
+// ── Post ──
+const PostSchema = registry.register(
+  'Post',
+  z
+    .object({
+      id: z.string().uuid(),
+      user_id: z.string().uuid(),
+      recording_id: z.string().uuid().nullable(),
+      content: z.string(),
+      post_type: z.string(),
+      is_favorite: z.boolean(),
+      copied_at: z.string().datetime().nullable(),
+      created_at: z.string().datetime(),
+    })
+    .openapi({}),
+);
+
+// ── Request schemas ──
+const GeneratePostRequestSchema = registry.register(
+  'GeneratePostRequest',
+  generatePostSchema.openapi({}),
+);
+const UpdatePostRequestSchema = registry.register(
+  'UpdatePostRequest',
+  updatePostSchema.openapi({}),
+);
+const UpdateRecordingRequestSchema = registry.register(
+  'UpdateRecordingRequest',
+  updateTranscriptionSchema.openapi({}),
+);
+const ErrorSchema = registry.register(
+  'Error',
+  z.object({ error: z.string() }).openapi({}),
+);
+
+// ── Paths ──
+
+// Health
+registry.registerPath({
+  method: 'get',
+  path: '/health',
+  tags: ['Health'],
+  summary: 'Health check',
+  security: [],
+  responses: { 200: { description: 'Server is healthy' } },
+});
+
+// Preferences
+registry.registerPath({
+  method: 'get',
+  path: '/preferences',
+  tags: ['Preferences'],
+  summary: 'Get user preferences',
+  security: [{ [bearerAuth.name]: [] }],
+  responses: {
+    200: {
+      description: 'User preferences',
+      content: { 'application/json': { schema: PreferencesSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/preferences',
+  tags: ['Preferences'],
+  summary: 'Create or update user preferences',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: PreferencesSchema,
+          example: {
+            writing_style: 'storytelling',
+            language: 'en',
+            role: 'Founder',
+            industry: 'SaaS',
+            audience: 'Entrepreneurs',
+            onboarding_completed: true,
+            goal: 'Build authority',
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Updated preferences',
+      content: { 'application/json': { schema: PreferencesSchema } },
+    },
+  },
+});
+
+// Recordings
+registry.registerPath({
+  method: 'get',
+  path: '/recordings',
+  tags: ['Recordings'],
+  summary: 'List user recordings',
+  security: [{ [bearerAuth.name]: [] }],
+  responses: {
+    200: {
+      description: 'List of recordings',
+      content: {
+        'application/json': {
+          schema: { type: 'array', items: { $ref: '#/components/schemas/Recording' } },
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/recordings/transcribe',
+  tags: ['Recordings'],
+  summary: 'Upload and transcribe an audio file',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: {
+      content: {
+        'multipart/form-data': {
+          schema: z.object({
+            audio: z.string().openapi({ type: 'string', format: 'binary', description: 'Audio file (max 25MB)' }),
+            language: z.string().optional().openapi({ description: 'Language code (e.g. "en", "fr")' }),
+          }),
+        },
+      },
+      required: true,
+    },
+  },
+  responses: {
+    201: {
+      description: 'Recording created with transcription',
+      content: { 'application/json': { schema: RecordingSchema } },
+    },
+    400: { description: 'No audio file provided' },
+    422: { description: 'Language detection failed' },
+  },
+});
+
+const recordingIdParam = z.string().uuid().openapi({ param: { name: 'recordingId', in: 'path' } });
+
+registry.registerPath({
+  method: 'get',
+  path: '/recordings/{recordingId}',
+  tags: ['Recordings'],
+  summary: 'Get a recording by ID',
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ recordingId: recordingIdParam }) },
+  responses: {
+    200: {
+      description: 'Recording details',
+      content: { 'application/json': { schema: RecordingSchema } },
+    },
+    404: { description: 'Recording not found' },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/recordings/{recordingId}',
+  tags: ['Recordings'],
+  summary: 'Update a recording',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ recordingId: recordingIdParam }),
+    body: {
+      content: {
+        'application/json': {
+          schema: UpdateRecordingRequestSchema,
+          example: { transcript: 'Updated transcript text', language: 'en' },
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Updated recording',
+      content: { 'application/json': { schema: RecordingSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/recordings/{recordingId}',
+  tags: ['Recordings'],
+  summary: 'Delete a recording',
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ recordingId: recordingIdParam }) },
+  responses: { 204: { description: 'Recording deleted' } },
+});
+
+// Posts
+registry.registerPath({
+  method: 'get',
+  path: '/posts',
+  tags: ['Posts'],
+  summary: 'List user posts',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    query: z.object({
+      page: z.number().int().default(1).optional(),
+      limit: z.number().int().default(10).optional(),
+    }),
+  },
+  responses: {
+    200: {
+      description: 'List of posts',
+      content: {
+        'application/json': {
+          schema: { type: 'array', items: { $ref: '#/components/schemas/Post' } },
+        },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/posts/generate',
+  tags: ['Posts'],
+  summary: 'Generate a LinkedIn post from recording or text',
+  description: 'Returns a streamed response. Provide either recordingId or transcript.',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: GeneratePostRequestSchema,
+          examples: {
+            fromRecording: {
+              summary: 'Generate from a recording',
+              value: { recordingId: '{{recordingId}}', writingStyle: 'storytelling' },
+            },
+            fromText: {
+              summary: 'Generate from manual text',
+              value: {
+                transcript: 'Today I want to talk about building in public...',
+                writingStyle: 'professional',
+              },
+            },
+            withContext: {
+              summary: 'With author context',
+              value: {
+                recordingId: '{{recordingId}}',
+                writingStyle: 'casual',
+                authorContext: {
+                  role: 'CTO',
+                  industry: 'Tech',
+                  audience: 'Engineering leaders',
+                  goal: 'Share leadership insights',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Streamed post generation (NDJSON)',
+      content: { 'text/event-stream': { schema: { type: 'string' } } },
+    },
+  },
+});
+
+const postIdParam = z.string().uuid().openapi({ param: { name: 'postId', in: 'path' } });
+
+registry.registerPath({
+  method: 'get',
+  path: '/posts/{postId}',
+  tags: ['Posts'],
+  summary: 'Get a post by ID',
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ postId: postIdParam }) },
+  responses: {
+    200: {
+      description: 'Post details',
+      content: { 'application/json': { schema: PostSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'patch',
+  path: '/posts/{postId}',
+  tags: ['Posts'],
+  summary: 'Update a post (content, favorite, copied)',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    params: z.object({ postId: postIdParam }),
+    body: {
+      content: { 'application/json': { schema: UpdatePostRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Updated post',
+      content: { 'application/json': { schema: PostSchema } },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'delete',
+  path: '/posts/{postId}',
+  tags: ['Posts'],
+  summary: 'Delete a post',
+  security: [{ [bearerAuth.name]: [] }],
+  request: { params: z.object({ postId: postIdParam }) },
+  responses: { 204: { description: 'Post deleted' } },
+});
+
+// ── Generate document ──
+const generator = new OpenApiGeneratorV3(registry.definitions);
+const swaggerDocument = generator.generateDocument({
   openapi: '3.0.3',
   info: {
     title: 'Talk2Post API',
     version: '1.0.0',
     description: 'Transform voice recordings and text into LinkedIn posts using AI.',
   },
-  servers: [
-    { url: '/api', description: 'API base path' },
-  ],
-  components: {
-    securitySchemes: {
-      BearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Supabase JWT access token',
-      },
-    },
-    schemas: {
-      WritingStyle: {
-        type: 'string',
-        enum: [
-          'professional', 'casual', 'funny', 'storytelling', 'conversational',
-          'creative', 'technical', 'marketing', 'sales', 'personal', 'corporate', 'academic',
-        ],
-      },
-      Language: {
-        type: 'string',
-        enum: ['fr', 'en'],
-      },
-      MimeType: {
-        type: 'string',
-        enum: [
-          'audio/flac', 'audio/mp3', 'audio/mp4', 'audio/mpeg',
-          'audio/mpga', 'audio/m4a', 'audio/ogg', 'audio/wav', 'audio/webm',
-        ],
-      },
-      Preferences: {
-        type: 'object',
-        properties: {
-          writing_style: { $ref: '#/components/schemas/WritingStyle' },
-          language: { $ref: '#/components/schemas/Language' },
-          role: { type: 'string', maxLength: 100 },
-          industry: { type: 'string', maxLength: 100 },
-          audience: { type: 'string', maxLength: 100 },
-          goal: { type: 'string', maxLength: 200 },
-        },
-      },
-      Recording: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          user_id: { type: 'string', format: 'uuid' },
-          audio_url: { type: 'string' },
-          transcript: { type: 'string' },
-          language: { type: 'string' },
-          duration: { type: 'integer' },
-          status: { type: 'string', enum: ['processing', 'completed', 'failed'] },
-          created_at: { type: 'string', format: 'date-time' },
-        },
-      },
-      Post: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          user_id: { type: 'string', format: 'uuid' },
-          recording_id: { type: 'string', format: 'uuid', nullable: true },
-          content: { type: 'string' },
-          post_type: { type: 'string' },
-          is_favorite: { type: 'boolean' },
-          copied_at: { type: 'string', format: 'date-time', nullable: true },
-          created_at: { type: 'string', format: 'date-time' },
-        },
-      },
-      GeneratePostRequest: {
-        type: 'object',
-        properties: {
-          recordingId: { type: 'string', format: 'uuid', description: 'Either recordingId or transcript is required' },
-          transcript: { type: 'string', minLength: 10, description: 'Either recordingId or transcript is required' },
-          writingStyle: { $ref: '#/components/schemas/WritingStyle', default: 'professional' },
-          language: { $ref: '#/components/schemas/Language' },
-          authorContext: {
-            type: 'object',
-            properties: {
-              role: { type: 'string' },
-              industry: { type: 'string' },
-              audience: { type: 'string' },
-              goal: { type: 'string' },
-            },
-          },
-        },
-      },
-      UpdatePostRequest: {
-        type: 'object',
-        properties: {
-          content: { type: 'string', minLength: 1 },
-          is_favorite: { type: 'boolean' },
-          copied: { type: 'boolean' },
-        },
-      },
-      UpdateRecordingRequest: {
-        type: 'object',
-        properties: {
-          transcript: { type: 'string' },
-          language: { type: 'string' },
-        },
-      },
-      Error: {
-        type: 'object',
-        properties: {
-          error: { type: 'string' },
-        },
-      },
-    },
-  },
+  servers: [{ url: '/api', description: 'API base path' }],
   security: [{ BearerAuth: [] }],
-  paths: {
-    '/health': {
-      get: {
-        tags: ['Health'],
-        summary: 'Health check',
-        security: [],
-        responses: {
-          '200': { description: 'Server is healthy' },
-        },
-      },
-    },
-    '/preferences': {
-      get: {
-        tags: ['Preferences'],
-        summary: 'Get user preferences',
-        responses: {
-          '200': {
-            description: 'User preferences',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Preferences' } } },
-          },
-        },
-      },
-      patch: {
-        tags: ['Preferences'],
-        summary: 'Create or update user preferences',
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/Preferences' },
-              example: {
-                writing_style: 'storytelling',
-                language: 'en',
-                role: 'Founder',
-                industry: 'SaaS',
-                audience: 'Entrepreneurs',
-                goal: 'Build authority',
-              },
-            },
-          },
-        },
-        responses: {
-          '200': {
-            description: 'Updated preferences',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Preferences' } } },
-          },
-        },
-      },
-    },
-    '/recordings': {
-      get: {
-        tags: ['Recordings'],
-        summary: 'List user recordings',
-        responses: {
-          '200': {
-            description: 'List of recordings',
-            content: {
-              'application/json': {
-                schema: { type: 'array', items: { $ref: '#/components/schemas/Recording' } },
-              },
-            },
-          },
-        },
-      },
-    },
-    '/recordings/transcribe': {
-      post: {
-        tags: ['Recordings'],
-        summary: 'Upload and transcribe an audio file',
-        requestBody: {
-          required: true,
-          content: {
-            'multipart/form-data': {
-              schema: {
-                type: 'object',
-                required: ['audio'],
-                properties: {
-                  audio: { type: 'string', format: 'binary', description: 'Audio file (max 25MB)' },
-                  language: { type: 'string', description: 'Language code (e.g. "en", "fr")' },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          '201': {
-            description: 'Recording created with transcription',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Recording' } } },
-          },
-          '400': { description: 'No audio file provided' },
-          '422': { description: 'Language detection failed' },
-        },
-      },
-    },
-    '/recordings/{recordingId}': {
-      get: {
-        tags: ['Recordings'],
-        summary: 'Get a recording by ID',
-        parameters: [
-          { name: 'recordingId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-        ],
-        responses: {
-          '200': {
-            description: 'Recording details',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Recording' } } },
-          },
-          '404': { description: 'Recording not found' },
-        },
-      },
-      patch: {
-        tags: ['Recordings'],
-        summary: 'Update a recording',
-        parameters: [
-          { name: 'recordingId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/UpdateRecordingRequest' },
-              example: { transcript: 'Updated transcript text', language: 'en' },
-            },
-          },
-        },
-        responses: {
-          '200': {
-            description: 'Updated recording',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Recording' } } },
-          },
-        },
-      },
-      delete: {
-        tags: ['Recordings'],
-        summary: 'Delete a recording',
-        parameters: [
-          { name: 'recordingId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-        ],
-        responses: {
-          '204': { description: 'Recording deleted' },
-        },
-      },
-    },
-    '/posts': {
-      get: {
-        tags: ['Posts'],
-        summary: 'List user posts',
-        parameters: [
-          { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
-          { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
-        ],
-        responses: {
-          '200': {
-            description: 'List of posts',
-            content: {
-              'application/json': {
-                schema: { type: 'array', items: { $ref: '#/components/schemas/Post' } },
-              },
-            },
-          },
-        },
-      },
-    },
-    '/posts/generate': {
-      post: {
-        tags: ['Posts'],
-        summary: 'Generate a LinkedIn post from recording or text',
-        description: 'Returns a streamed response. Provide either recordingId or transcript.',
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/GeneratePostRequest' },
-              examples: {
-                fromRecording: {
-                  summary: 'Generate from a recording',
-                  value: { recordingId: '{{recordingId}}', writingStyle: 'storytelling' },
-                },
-                fromText: {
-                  summary: 'Generate from manual text',
-                  value: {
-                    transcript: 'Today I want to talk about building in public...',
-                    writingStyle: 'professional',
-                  },
-                },
-                withContext: {
-                  summary: 'With author context',
-                  value: {
-                    recordingId: '{{recordingId}}',
-                    writingStyle: 'casual',
-                    authorContext: {
-                      role: 'CTO',
-                      industry: 'Tech',
-                      audience: 'Engineering leaders',
-                      goal: 'Share leadership insights',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          '200': {
-            description: 'Streamed post generation (NDJSON)',
-            content: { 'text/event-stream': { schema: { type: 'string' } } },
-          },
-        },
-      },
-    },
-    '/posts/{postId}': {
-      get: {
-        tags: ['Posts'],
-        summary: 'Get a post by ID',
-        parameters: [
-          { name: 'postId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-        ],
-        responses: {
-          '200': {
-            description: 'Post details',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Post' } } },
-          },
-        },
-      },
-      patch: {
-        tags: ['Posts'],
-        summary: 'Update a post (content, favorite, copied)',
-        parameters: [
-          { name: 'postId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-        ],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/UpdatePostRequest' },
-            },
-          },
-        },
-        responses: {
-          '200': {
-            description: 'Updated post',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Post' } } },
-          },
-        },
-      },
-      delete: {
-        tags: ['Posts'],
-        summary: 'Delete a post',
-        parameters: [
-          { name: 'postId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-        ],
-        responses: {
-          '204': { description: 'Post deleted' },
-        },
-      },
-    },
-  },
-};
+});
 
 const CDN = 'https://unpkg.com/swagger-ui-dist@5.18.2';
 
