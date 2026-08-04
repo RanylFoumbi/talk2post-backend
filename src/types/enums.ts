@@ -23,6 +23,11 @@ export enum PostType {
   LINKEDIN = 'linkedin',
 }
 
+export enum PostStatus {
+  DRAFT = 'draft',
+  COMPLETED = 'completed',
+}
+
 export enum MimeType {
   FLAC = 'audio/flac',
   MP3 = 'audio/mp3',

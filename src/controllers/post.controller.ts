@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { Sentry } from '../config';
 import { CustomError, resolveStreamErrorCode } from '../middleware/error.middleware';
-import type { UpdatePostInput } from '../schemas/post.schema';
+import { listPostsQuerySchema } from '../schemas/post.schema';
+import type { CreateDraftInput, UpdatePostInput } from '../schemas/post.schema';
 import { PostService, type UpdatePostData } from '../services/post.service';
 import { PreferencesService } from '../services/preferences.service';
 import { RecordingService } from '../services/recording.service';
@@ -12,7 +13,8 @@ export class PostController {
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
 
-      const posts = await PostService.listUserPosts(req.userId!, page, limit);
+      const { status } = listPostsQuerySchema.parse(req.query);
+      const posts = await PostService.listUserPosts(req.userId!, page, limit, status);
 
       res.status(200).json(posts);
     } catch (err) {
@@ -37,12 +39,13 @@ export class PostController {
   static async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { postId } = req.params;
-      const { content, is_favorite, copied } = req.body as UpdatePostInput;
+      const { content, is_favorite, copied, post_type } = req.body as UpdatePostInput;
 
       const updateData: UpdatePostData = {};
       if (content !== undefined) updateData.content = content;
       if (is_favorite !== undefined) updateData.is_favorite = is_favorite;
       if (copied) updateData.copied_at = new Date().toISOString();
+      if (post_type !== undefined) updateData.post_type = post_type;
 
       const post = await PostService.updatePost(String(postId), req.userId!, updateData);
 
@@ -60,6 +63,24 @@ export class PostController {
       await PostService.deletePost(String(postId), req.userId!);
 
       res.status(204).send();
+    } catch (err) {
+      Sentry.captureException(err);
+      next(err);
+    }
+  }
+
+  static async createDraft(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { recordingId, content, writingStyle } = req.body as CreateDraftInput;
+
+      const post = await PostService.createDraft({
+        userId: req.userId!,
+        recordingId,
+        content,
+        writingStyle,
+      });
+
+      res.status(201).json(post);
     } catch (err) {
       Sentry.captureException(err);
       next(err);

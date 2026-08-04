@@ -1,6 +1,6 @@
-import { AUDIO_EXPIRY_MS } from '../utils/cronjob';
+import { AUDIO_EXPIRY_MS, DRAFT_AUDIO_RETENTION_MS } from '../utils/cronjob';
 import { SupabaseConfig } from '../config';
-import { RecordingStatus } from '../types/enums';
+import { PostStatus, RecordingStatus } from '../types/enums';
 
 export interface CreateRecordingParams {
   userId: string;
@@ -80,6 +80,36 @@ export class RecordingService {
   static async purgeExpiredAudio(): Promise<void> {
     const supabase = SupabaseConfig.getAdmin();
 
+    // Fetch draft posts with a recording to apply extended retention
+    const { data: drafts, error: draftsError } = await supabase
+      .from('posts')
+      .select('recording_id, updated_at')
+      .eq('status', PostStatus.DRAFT)
+      .not('recording_id', 'is', null);
+    if (draftsError) throw draftsError;
+
+    const draftRecordingMap = new Map<string, string>();
+    if (drafts) {
+      for (const d of drafts) {
+        draftRecordingMap.set(d.recording_id, d.updated_at);
+      }
+    }
+
+    // Fetch recordings to map audio paths to recording IDs
+    const { data: allRecordings, error: recError } = await supabase
+      .from('recordings')
+      .select('id, audio_url')
+      .not('audio_url', 'is', null);
+    if (recError) throw recError;
+
+    const pathToRecordingId = new Map<string, string>();
+    if (allRecordings) {
+      for (const r of allRecordings) {
+        const path = decodeURIComponent(r.audio_url).split('/recordings/')[1];
+        if (path) pathToRecordingId.set(path, r.id);
+      }
+    }
+
     // List all user folders in the recordings bucket
     const { data: folders, error: foldersError } = await supabase.storage
       .from('recordings')
@@ -98,8 +128,18 @@ export class RecordingService {
       if (!files) continue;
 
       for (const file of files) {
-        if (this.isExpiredByFilename(file.name)) {
-          expiredPaths.push(`${userId}/${file.name}`);
+        const filePath = `${userId}/${file.name}`;
+        const recordingId = pathToRecordingId.get(filePath);
+        const draftUpdatedAt = recordingId ? draftRecordingMap.get(recordingId) : undefined;
+
+        if (draftUpdatedAt) {
+          // Draft-linked recording: use extended retention from draft's updated_at
+          const elapsed = Date.now() - new Date(draftUpdatedAt).getTime();
+          if (elapsed > DRAFT_AUDIO_RETENTION_MS) {
+            expiredPaths.push(filePath);
+          }
+        } else if (this.isExpiredByFilename(file.name)) {
+          expiredPaths.push(filePath);
         }
       }
     }

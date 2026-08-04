@@ -5,7 +5,7 @@ import { userPrompt } from '../ai/script.ai';
 import { SupabaseConfig } from '../config';
 import { Config } from '../config/env';
 import { DEFAULT_LLM_MODEL } from '../types/ai.types';
-import { WritingStyle } from '../types/enums';
+import { PostStatus, WritingStyle } from '../types/enums';
 
 const openai = createOpenAI({ apiKey: Config.OPENAI_API_KEY });
 
@@ -28,10 +28,18 @@ export interface CreatePostParams {
   writingStyle?: string;
 }
 
+export interface CreateDraftParams {
+  userId: string;
+  recordingId?: string;
+  content?: string;
+  writingStyle?: string;
+}
+
 export interface UpdatePostData {
   content?: string;
   is_favorite?: boolean;
   copied_at?: string;
+  post_type?: string;
 }
 
 export class PostService {
@@ -72,14 +80,40 @@ export class PostService {
     return post;
   }
 
-  static async listUserPosts(userId: string, page: number = 1, limit: number = 20) {
+  static async createDraft(params: CreateDraftParams) {
+    const { userId, recordingId, content, writingStyle } = params;
+
+    const { data: post, error } = await SupabaseConfig.getAdmin()
+      .from('posts')
+      .insert({
+        user_id: userId,
+        recording_id: recordingId || null,
+        content: content || '',
+        post_type: writingStyle || 'professional',
+        status: PostStatus.DRAFT,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return post;
+  }
+
+  static async listUserPosts(userId: string, page: number = 1, limit: number = 20, status?: PostStatus) {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data: posts, error } = await SupabaseConfig.getAdmin()
+    let query = SupabaseConfig.getAdmin()
       .from('posts')
       .select()
-      .eq('user_id', userId)
+      .eq('user_id', userId);
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data: posts, error } = await query
       .order('created_at', { ascending: false })
       .range(from, to);
 
