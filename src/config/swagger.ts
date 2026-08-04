@@ -7,9 +7,9 @@ import swaggerUi from 'swagger-ui-express';
 import { Router } from 'express';
 import { z } from 'zod';
 import { upsertPreferencesSchema } from '../schemas/preferences.schema';
-import { generatePostSchema, updatePostSchema } from '../schemas/post.schema';
+import { createDraftSchema, generatePostSchema, updatePostSchema } from '../schemas/post.schema';
 import { updateTranscriptionSchema } from '../schemas/recording.schema';
-import { Language, MimeType, RecordingStatus, WritingStyle } from '../types/enums';
+import { Language, MimeType, PostStatus, RecordingStatus, WritingStyle } from '../types/enums';
 
 extendZodWithOpenApi(z);
 
@@ -67,6 +67,7 @@ const PostSchema = registry.register(
       recording_id: z.string().uuid().nullable(),
       content: z.string(),
       post_type: z.string(),
+      status: z.nativeEnum(PostStatus),
       is_favorite: z.boolean(),
       copied_at: z.string().datetime().nullable(),
       created_at: z.string().datetime(),
@@ -78,6 +79,10 @@ const PostSchema = registry.register(
 const GeneratePostRequestSchema = registry.register(
   'GeneratePostRequest',
   generatePostSchema.openapi({}),
+);
+const CreateDraftRequestSchema = registry.register(
+  'CreateDraftRequest',
+  createDraftSchema.openapi({}),
 );
 const UpdatePostRequestSchema = registry.register(
   'UpdatePostRequest',
@@ -263,6 +268,7 @@ registry.registerPath({
     query: z.object({
       page: z.number().int().default(1).optional(),
       limit: z.number().int().default(10).optional(),
+      status: z.nativeEnum(PostStatus).optional().openapi({ description: 'Filter by post status' }),
     }),
   },
   responses: {
@@ -273,6 +279,35 @@ registry.registerPath({
           schema: { type: 'array', items: { $ref: '#/components/schemas/Post' } },
         },
       },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/posts/draft',
+  tags: ['Posts'],
+  summary: 'Create a draft post',
+  description: 'Creates a post with status "draft". No AI generation is performed.',
+  security: [{ [bearerAuth.name]: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: CreateDraftRequestSchema,
+          example: {
+            recordingId: '{{recordingId}}',
+            content: 'My draft content...',
+            writingStyle: 'professional',
+          },
+        },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: 'Draft post created',
+      content: { 'application/json': { schema: PostSchema } },
     },
   },
 });
@@ -348,7 +383,7 @@ registry.registerPath({
   method: 'patch',
   path: '/posts/{postId}',
   tags: ['Posts'],
-  summary: 'Update a post (content, favorite, copied)',
+  summary: 'Update a post (content, favorite, copied, post_type)',
   security: [{ [bearerAuth.name]: [] }],
   request: {
     params: z.object({ postId: postIdParam }),
