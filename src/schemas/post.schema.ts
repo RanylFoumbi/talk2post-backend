@@ -1,4 +1,4 @@
-import { Language, PostStatus, WritingStyle } from '../types/enums';
+import { Language, PostStatus, PostType, WritingStyle } from '../types/enums';
 import { z } from 'zod';
 
 export const generatePostSchema = z
@@ -43,7 +43,8 @@ export const listPostsQuerySchema = z.object({
   status: z.nativeEnum(PostStatus).optional(),
   is_favorite: z.coerce.boolean().optional(),
   sort: z.enum(['asc', 'desc']).optional(),
-  post_type: z.nativeEnum(WritingStyle).optional(),
+  writing_style: z.nativeEnum(WritingStyle).optional(),
+  post_type: z.nativeEnum(PostType).optional(),
 });
 
 export type ListPostsQuery = z.infer<typeof listPostsQuerySchema>;

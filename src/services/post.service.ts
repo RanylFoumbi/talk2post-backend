@@ -106,9 +106,10 @@ export class PostService {
     status?: PostStatus;
     isFavorite?: boolean;
     sort?: 'asc' | 'desc';
+    writingStyle?: string;
     postType?: string;
   } = {}) {
-    const { page = 1, limit = 20, status, isFavorite, sort = 'desc', postType } = options;
+    const { page = 1, limit = 20, status, isFavorite, sort = 'desc', writingStyle, postType } = options;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -122,6 +123,9 @@ export class PostService {
     }
     if (isFavorite !== undefined) {
       query = query.eq('is_favorite', isFavorite);
+    }
+    if (writingStyle) {
+      query = query.eq('writing_style', writingStyle);
     }
     if (postType) {
       query = query.eq('post_type', postType);

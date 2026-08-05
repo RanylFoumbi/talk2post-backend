@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { upsertPreferencesSchema } from '../schemas/preferences.schema';
 import { createDraftSchema, generatePostSchema, updatePostSchema } from '../schemas/post.schema';
 import { updateTranscriptionSchema } from '../schemas/recording.schema';
-import { Language, MimeType, PostStatus, RecordingStatus, WritingStyle } from '../types/enums';
+import { Language, MimeType, PostStatus, PostType, RecordingStatus, WritingStyle } from '../types/enums';
 
 extendZodWithOpenApi(z);
 
@@ -269,6 +269,10 @@ registry.registerPath({
       page: z.number().int().default(1).optional(),
       limit: z.number().int().default(10).optional(),
       status: z.nativeEnum(PostStatus).optional().openapi({ description: 'Filter by post status' }),
+      is_favorite: z.boolean().optional().openapi({ description: 'Filter by favorite status' }),
+      sort: z.enum(['asc', 'desc']).optional().openapi({ description: 'Sort order by created_at (default: desc)' }),
+      writing_style: z.nativeEnum(WritingStyle).optional().openapi({ description: 'Filter by writing style' }),
+      post_type: z.nativeEnum(PostType).optional().openapi({ description: 'Filter by post type (e.g. linkedin)' }),
     }),
   },
   responses: {

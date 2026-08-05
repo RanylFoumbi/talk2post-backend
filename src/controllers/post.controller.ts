@@ -13,9 +13,9 @@ export class PostController {
       const page = Math.max(1, parseInt(req.query.page as string) || 1);
       const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
 
-      const { status, is_favorite, sort, post_type } = listPostsQuerySchema.parse(req.query);
+      const { status, is_favorite, sort, writing_style, post_type } = listPostsQuerySchema.parse(req.query);
       const posts = await PostService.listUserPosts(req.userId!, {
-        page, limit, status, isFavorite: is_favorite, sort, postType: post_type,
+        page, limit, status, isFavorite: is_favorite, sort, writingStyle: writing_style, postType: post_type,
       });
 
       res.status(200).json(posts);
