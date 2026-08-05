@@ -158,4 +158,27 @@ export class PostService {
 
     if (error) throw error;
   }
+
+  static async purgeExpiredDrafts(maxAgeDays: number): Promise<void> {
+    const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: expired, error: fetchError } = await SupabaseConfig.getAdmin()
+      .from('posts')
+      .select('id')
+      .eq('status', PostStatus.DRAFT)
+      .lt('created_at', cutoff);
+
+    if (fetchError) throw fetchError;
+    if (!expired || expired.length === 0) return;
+
+    const ids = expired.map((d) => d.id);
+    const { error: deleteError } = await SupabaseConfig.getAdmin()
+      .from('posts')
+      .delete()
+      .in('id', ids);
+
+    if (deleteError) throw deleteError;
+
+    console.log(`[purgeExpiredDrafts] Deleted ${ids.length} draft(s) older than ${maxAgeDays} days`);
+  }
 }
