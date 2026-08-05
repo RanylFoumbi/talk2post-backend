@@ -100,7 +100,15 @@ export class PostService {
     return post;
   }
 
-  static async listUserPosts(userId: string, page: number = 1, limit: number = 20, status?: PostStatus) {
+  static async listUserPosts(userId: string, options: {
+    page?: number;
+    limit?: number;
+    status?: PostStatus;
+    isFavorite?: boolean;
+    sort?: 'asc' | 'desc';
+    postType?: string;
+  } = {}) {
+    const { page = 1, limit = 20, status, isFavorite, sort = 'desc', postType } = options;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -112,9 +120,15 @@ export class PostService {
     if (status) {
       query = query.eq('status', status);
     }
+    if (isFavorite !== undefined) {
+      query = query.eq('is_favorite', isFavorite);
+    }
+    if (postType) {
+      query = query.eq('post_type', postType);
+    }
 
     const { data: posts, error } = await query
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: sort === 'asc' })
       .range(from, to);
 
     if (error) throw error;

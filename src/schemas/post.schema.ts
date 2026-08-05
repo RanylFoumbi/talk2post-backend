@@ -41,6 +41,9 @@ export type UpdatePostInput = z.infer<typeof updatePostSchema>;
 
 export const listPostsQuerySchema = z.object({
   status: z.nativeEnum(PostStatus).optional(),
+  is_favorite: z.coerce.boolean().optional(),
+  sort: z.enum(['asc', 'desc']).optional(),
+  post_type: z.nativeEnum(WritingStyle).optional(),
 });
 
 export type ListPostsQuery = z.infer<typeof listPostsQuerySchema>;
