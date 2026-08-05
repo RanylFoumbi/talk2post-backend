@@ -22,7 +22,43 @@ export interface UploadAudioParams {
   mimeType: string;
 }
 
+const SIGNED_URL_EXPIRY_SECONDS = 3 * 24 * 60 * 60; // 3 days
+
 export class RecordingService {
+  /**
+   * Resolves the storage path from an audio_url field.
+   * Handles both legacy full URLs and new path-only values.
+   */
+  private static extractPath(audioUrl: string): string {
+    if (audioUrl.startsWith('http')) {
+      const parts = decodeURIComponent(audioUrl).split('/recordings/');
+      return parts.length > 1 ? parts[1] : audioUrl;
+    }
+    return audioUrl;
+  }
+
+  /**
+   * Generates a signed URL for a given storage path.
+   */
+  static async getSignedAudioUrl(storagePath: string): Promise<string | null> {
+    const path = this.extractPath(storagePath);
+    const { data, error } = await SupabaseConfig.getAdmin()
+      .storage.from('recordings')
+      .createSignedUrl(path, SIGNED_URL_EXPIRY_SECONDS);
+
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  }
+
+  /**
+   * Replaces audio_url with a fresh signed URL in a recording object.
+   */
+  static async withSignedUrl<T extends { audio_url?: string | null }>(recording: T): Promise<T> {
+    if (!recording.audio_url) return recording;
+    const signedUrl = await this.getSignedAudioUrl(recording.audio_url);
+    return { ...recording, audio_url: signedUrl };
+  }
+
   static async uploadAudio(params: UploadAudioParams): Promise<string> {
     const { userId, fileName, buffer, mimeType } = params;
 
@@ -37,11 +73,7 @@ export class RecordingService {
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = SupabaseConfig.getAdmin()
-      .storage.from('recordings')
-      .getPublicUrl(filePath);
-
-    return urlData.publicUrl;
+    return filePath;
   }
 
   static async createRecording(params: CreateRecordingParams) {
@@ -105,7 +137,7 @@ export class RecordingService {
     const pathToRecordingId = new Map<string, string>();
     if (allRecordings) {
       for (const r of allRecordings) {
-        const path = decodeURIComponent(r.audio_url).split('/recordings/')[1];
+        const path = this.extractPath(r.audio_url);
         if (path) pathToRecordingId.set(path, r.id);
       }
     }
@@ -160,7 +192,7 @@ export class RecordingService {
       const expiredSet = new Set(expiredPaths);
       const ids = recordings
         .filter((r: { id: string; audio_url: string }) =>
-          expiredSet.has(decodeURIComponent(r.audio_url).split('/recordings/')[1] ?? ''),
+          expiredSet.has(this.extractPath(r.audio_url)),
         )
         .map((r: { id: string }) => r.id);
 
@@ -201,7 +233,7 @@ export class RecordingService {
 
     if (updateError) throw updateError;
 
-    return completed;
+    return this.withSignedUrl(completed);
   }
 
   static async deleteRecording(recordingId: string) {
@@ -222,8 +254,9 @@ export class RecordingService {
       .maybeSingle();
 
     if (getError) throw getError;
+    if (!recording) return recording;
 
-    return recording;
+    return this.withSignedUrl(recording);
   }
 
   static async listUserRecordings(userId: string) {
@@ -233,7 +266,8 @@ export class RecordingService {
       .eq('user_id', userId);
 
     if (listError) throw listError;
+    if (!recordings) return recordings;
 
-    return recordings;
+    return Promise.all(recordings.map((r) => this.withSignedUrl(r)));
   }
 }
